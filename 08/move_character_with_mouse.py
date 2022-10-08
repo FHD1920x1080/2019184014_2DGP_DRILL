@@ -17,7 +17,7 @@ def handle_events():
             if event.type == SDL_QUIT:
                 running = False
             elif event.type == SDL_MOUSEMOTION:
-                x, y = event.x, TUK_HEIGHT - 1 + event.y
+                x, y = event.x, TUK_HEIGHT - 1 - event.y
             elif event.type == SDL_KEYDOWN and event.key == SDLK_ESCAPE:
                 running = False
 
@@ -28,7 +28,7 @@ def handle_events():
 open_canvas(TUK_WIDTH, TUK_HEIGHT)
 tuk_ground = load_image('TUK_GROUND.png')
 character = load_image('animation_sheet.png')
-
+character = load_image('animation_sheet.png')
 running = True
 x, y = TUK_WIDTH // 2, TUK_HEIGHT // 2
 frame = 0
