@@ -1,6 +1,6 @@
 
 
-objects = [[],[]]
+objects = [[],[],[]]
 
 def all_objects():
     for layer in objects:

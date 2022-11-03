@@ -29,7 +29,7 @@ def enter():
     grass2 = Grass()
     game_world.add_object(grass, 0)
     game_world.add_object(boy, 1)
-    game_world.add_object(grass2, 1)
+    game_world.add_object(grass2, 2)
 
 # 종료
 def exit():
