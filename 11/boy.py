@@ -127,17 +127,17 @@ class AUTO_RUN:
     def do(self):
         self.frame = (self.frame + 1) % 8
         self.x += self.dir
-        if self.x >= 800:
+        if self.x > 800:
             self.dir = -1
-        elif self.x <= 0:
+        elif self.x < 0:
             self.dir = 1
 
     @staticmethod
     def draw(self):
         if self.dir == -1:
-            self.image.clip_draw(self.frame * 100, 0, 100, 100, self.x, self.y)
+            self.image.clip_draw(self.frame * 100, 0, 100, 100, self.x, self.y + 35, 200, 200)
         elif self.dir == 1:
-            self.image.clip_draw(self.frame * 100, 100, 100, 100, self.x, self.y)
+            self.image.clip_draw(self.frame * 100, 100, 100, 100, self.x, self.y + 35, 200, 200)
         pass
 
 next_state = {
