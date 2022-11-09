@@ -1,14 +1,14 @@
 from pico2d import *
 import game_framework
 import game_world
-
+import random
 from grass import Grass
 from boy import Boy
-from ball import Ball
+from bird import Bird
 
 boy = None
 grass = None
-grass2 = None
+
 def handle_events():
     events = get_events()
     for event in events:
@@ -16,35 +16,35 @@ def handle_events():
             game_framework.quit()
         elif (event.type, event.key) == (SDL_KEYDOWN, SDLK_ESCAPE):
             game_framework.quit()
+        elif (event.type, event.key) == (SDL_KEYDOWN, SDLK_g):
+            bird = Bird(random.randint(50,1550), random.randint(100,500), 20)
+            game_world.add_object(bird, 1)
+            pass
         else:
             boy.handle_event(event)
 
 
 # 초기화
 def enter():
-    global boy, grass, grass2
+    global boy, grass
     boy = Boy()
     grass = Grass()
-    grass.y += 30
-    grass2 = Grass()
     game_world.add_object(grass, 0)
     game_world.add_object(boy, 1)
-    game_world.add_object(grass2, 2)
 
 # 종료
 def exit():
-    global boy, grass
-    del boy
-    del grass
+    game_world.clear()
 
 def update():
     for game_object in game_world.all_objects():
         game_object.update()
-    #print(len(game_world.objects[0])+len(game_world.objects[1]))
+    delay(0.01)
 
 def draw_world():
     for game_object in game_world.all_objects():
         game_object.draw()
+
 def draw():
     clear_canvas()
     draw_world()

@@ -1,27 +1,20 @@
 from pico2d import *
-from ball import Ball
 import game_world
+import game_framework
+from ball import Ball
 
 #1 : 이벤트 정의
-RIGHT, LEFT, STOP, TIMER, SPACE = range(5)
-RD, LD, RU, LU = range(4)
+RD, LD, RU, LU, TIMER, SPACE = range(6)
 event_name = ['RD', 'LD', 'RU', 'LU', 'TIMER', 'SPACE']
 
 key_event_table = {
-    (SDL_KEYDOWN, SDLK_SPACE): SPACE
-}
-move_event_table = {
+    (SDL_KEYDOWN, SDLK_SPACE): SPACE,
     (SDL_KEYDOWN, SDLK_RIGHT): RD,
     (SDL_KEYDOWN, SDLK_LEFT): LD,
     (SDL_KEYUP, SDLK_RIGHT): RU,
     (SDL_KEYUP, SDLK_LEFT): LU
 }
-# move_able_table = {
-#     (RD, LD): RIGHT,
-#     (SDL_KEYDOWN, SDLK_LEFT): LD,
-#     (SDL_KEYUP, SDLK_RIGHT): RU,
-#     (SDL_KEYUP, SDLK_LEFT): LU
-# }
+
 
 #2 : 상태의 정의
 class IDLE:
@@ -72,9 +65,11 @@ class RUN:
             self.fire_ball()
 
     def do(self):
+        #self.frame = (self.frame + FRAMES_PER_ACTION * ACTION_PER_TIME * game_framework.frame_time) % 8
+
         self.frame = (self.frame + 1) % 8
-        self.x += self.dir
-        self.x = clamp(0, self.x, 800)
+        self.x += self.dir * RUN_SPEED_PPS * game_framework.frame_time
+        self.x = clamp(0, self.x, 1600)
 
     def draw(self):
         if self.dir == -1:
@@ -107,15 +102,22 @@ class SLEEP:
 #3. 상태 변환 구현
 
 next_state = {
-    IDLE:  {RIGHT: RUN, LEFT: RUN, STOP:IDLE, TIMER: SLEEP, SPACE: IDLE},
-    RUN:   {RIGHT: RUN, LEFT: RUN, STOP:IDLE, SPACE: RUN},
-    SLEEP: {RU: RUN, LU: RUN, RD: RUN, LD: RUN, SPACE: SLEEP}
+    IDLE:  {RU: RUN,  LU: RUN,  RD: RUN,  LD: RUN, TIMER: SLEEP, SPACE: IDLE},
+    RUN:   {RU: IDLE, LU: IDLE, RD: IDLE, LD: IDLE, SPACE: RUN},
+    SLEEP: {RU: RUN, LU: RUN, RD: RUN, LD: RUN, SPACE: IDLE}
 }
 
+PIXEL_PER_METER = (10.0 / 0.3) # 10 pixel 0.3m=30cm
+RUN_SPEED_KMPH = 20.0 # Km / Hour
+RUN_SPEED_MPM = (RUN_SPEED_KMPH * 1000.0 / 60.0) # 20 * 1000(m) / 분
+RUN_SPEED_MPS = (RUN_SPEED_MPM / 60.0)# METER PER MINIT / 초
+RUN_SPEED_PPS = (RUN_SPEED_MPS * PIXEL_PER_METER)
+
+
 class Boy:
-    ball_list = []
+
     def __init__(self):
-        self.x, self.y = 800 // 2, 70
+        self.x, self.y = 100, 70
         self.frame = 0
         self.dir, self.face_dir = 0, 1
         self.image = load_image('animation_sheet.png')
@@ -125,7 +127,8 @@ class Boy:
         self.event_que = []
         self.cur_state = IDLE
         self.cur_state.enter(self, None)
-        self.RIGHT, self.LEFT, self.UP, self.DOWN = False, False, False, False
+        self.font = load_font('ENCR10B.TTF', 16)
+
     def update(self):
         self.cur_state.do(self)
 
@@ -133,52 +136,23 @@ class Boy:
             event = self.event_que.pop()
             self.cur_state.exit(self, event)
             try:
-                self.cur_state = next_state[self.cur_state][event]#여기서 테이블에 없을때 예외처리 해주어야함.
+                self.cur_state = next_state[self.cur_state][event]
             except KeyError:
-                print('Error:',self.cur_state.__name__, event_name[event])
-                pass
+                print(f'ERROR: State {self.cur_state.__name__}    Event {event_name[event]}')
             self.cur_state.enter(self, event)
 
     def draw(self):
         self.cur_state.draw(self)
-        debug_print('PPPP')
-        debug_print(f'Face Dir: {self.face_dir}, Dir: {self.dir}')
-
+        self.font.draw(self.x - 60, self.y + 50, f'(Time: {get_time():.2f})', (255, 255, 0))
     def add_event(self, event):
         self.event_que.insert(0, event)
 
     def handle_event(self, event):
-        if (event.type, event.key) in move_event_table:
-            move_event = move_event_table[(event.type, event.key)]
-            if move_event == RD:
-                self.RIGHT = True
-                if self.LEFT == False:
-                    self.add_event(RIGHT)
-                else:
-                    self.add_event(STOP)
-            elif move_event == RU:
-                self.RIGHT = False
-                if self.LEFT == True:
-                    self.add_event(LEFT)
-                else:
-                    self.add_event(STOP)
-            elif move_event == LD:
-                self.LEFT = True
-                if self.RIGHT == False:
-                    self.add_event(LEFT)
-                else:
-                    self.add_event(STOP)
-            elif move_event == LU:
-                self.LEFT = False
-                if self.RIGHT == True:
-                    self.add_event(RIGHT)
-                else:
-                    self.add_event(STOP)
-        elif (event.type, event.key) in key_event_table:
+        if (event.type, event.key) in key_event_table:
             key_event = key_event_table[(event.type, event.key)]
             self.add_event(key_event)
 
     def fire_ball(self):
-        print('FIRE_BALL')
-        ball = Ball(self.x, self.y, self.face_dir * 3)
-        game_world.add_object(ball, 0)
+        print('FIRE BALL')
+        ball = Ball(self.x, self.y, self.face_dir*2)
+        game_world.add_object(ball, 1)
